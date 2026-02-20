@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.summary = "Rails view helpers for rendering Lucide SVG icons inline"
   spec.description = "Provides Rails view helpers for rendering Lucide SVG icons inline. " \
                      "Icons are synced from official Lucide GitHub releases via a rake task."
-  spec.homepage = "https://github.com/lucide-ruby/lucide-ruby"
+  spec.homepage = "https://github.com/x-ror/lucide-ruby"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 2.7.0"
 
