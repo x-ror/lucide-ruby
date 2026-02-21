@@ -146,10 +146,10 @@ def extract_zip(zip_path, extract_path)
 
   Zip::File.open(zip_path) do |zip_file|
     zip_file.each do |entry|
-      entry_path = File.expand_path(entry.name, real_extract_path)
+      entry_path = File.join(real_extract_path, entry.name)
 
-      # Prevent zip slip
-      unless entry_path.start_with?(real_extract_path)
+      # Prevent zip slip - expand_path normalizes ".." segments
+      unless File.expand_path(entry_path).start_with?(real_extract_path)
         raise LucideRuby::SyncError, "Zip slip detected: #{entry.name}"
       end
 
