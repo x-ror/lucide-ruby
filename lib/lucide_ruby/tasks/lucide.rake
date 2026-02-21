@@ -29,37 +29,37 @@ namespace :lucide do
 
     Dir.mktmpdir("lucide-sync") do |tmpdir|
       zip_path = File.join(tmpdir, "lucide-icons.zip")
-      extract_path = File.join(tmpdir, "extracted")
 
       # Download
       puts "Downloading #{download_url}..."
       download_file(download_url, zip_path)
       puts "Downloaded #{File.size(zip_path)} bytes"
 
-      # Extract
-      FileUtils.mkdir_p(extract_path)
-      extract_zip(zip_path, extract_path)
-
-      # Find SVG files in extracted archive
-      svg_source = find_svg_directory(extract_path)
-
-      if svg_source.nil?
-        raise LucideRuby::SyncError, "No SVG files found in the downloaded archive"
-      end
-
-      svg_files = Dir.glob(File.join(svg_source, "*.svg"))
-      puts "Found #{svg_files.size} icons"
-
-      # Atomic replace: write to temp dir, then swap
+      # Extract SVGs directly from zip
       staging_path = "#{icon_path}.staging"
       backup_path = "#{icon_path}.backup"
 
       FileUtils.rm_rf(staging_path)
       FileUtils.mkdir_p(staging_path)
 
-      svg_files.each do |svg_file|
-        FileUtils.cp(svg_file, staging_path)
+      svg_count = 0
+      Zip::File.open(zip_path) do |zip_file|
+        zip_file.each do |entry|
+          next if entry.directory?
+          next unless entry.name.end_with?(".svg")
+
+          dest = File.join(staging_path, File.basename(entry.name))
+          File.binwrite(dest, entry.get_input_stream.read)
+          svg_count += 1
+        end
       end
+
+      if svg_count == 0
+        FileUtils.rm_rf(staging_path)
+        raise LucideRuby::SyncError, "No SVG files found in the downloaded archive"
+      end
+
+      puts "Found #{svg_count} icons"
 
       # Write version file
       File.write(File.join(staging_path, ".lucide-version"), version)
@@ -73,7 +73,7 @@ namespace :lucide do
       # Clear cache
       LucideRuby.cache.clear!
 
-      puts "Synced #{svg_files.size} Lucide icons (#{version}) to #{icon_path}"
+      puts "Synced #{svg_count} Lucide icons (#{version}) to #{icon_path}"
     end
   end
 
@@ -141,33 +141,3 @@ def make_request(uri)
   http.request(request)
 end
 
-def extract_zip(zip_path, extract_path)
-  real_extract_path = File.realpath(extract_path)
-
-  Zip::File.open(zip_path) do |zip_file|
-    zip_file.each do |entry|
-      entry_path = File.join(real_extract_path, entry.name)
-
-      # Prevent zip slip - expand_path normalizes ".." segments
-      unless File.expand_path(entry_path).start_with?(real_extract_path)
-        raise LucideRuby::SyncError, "Zip slip detected: #{entry.name}"
-      end
-
-      if entry.directory?
-        FileUtils.mkdir_p(entry_path)
-      else
-        FileUtils.mkdir_p(File.dirname(entry_path))
-        entry.extract(entry_path)
-      end
-    end
-  end
-end
-
-def find_svg_directory(extract_path)
-  # Look for SVGs directly or in subdirectories
-  if Dir.glob(File.join(extract_path, "*.svg")).any?
-    return extract_path
-  end
-
-  Dir.glob(File.join(extract_path, "**", "*.svg")).first&.then { |f| File.dirname(f) }
-end
