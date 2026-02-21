@@ -142,12 +142,14 @@ def make_request(uri)
 end
 
 def extract_zip(zip_path, extract_path)
+  real_extract_path = File.realpath(extract_path)
+
   Zip::File.open(zip_path) do |zip_file|
     zip_file.each do |entry|
-      entry_path = File.join(extract_path, entry.name)
+      entry_path = File.expand_path(entry.name, real_extract_path)
 
       # Prevent zip slip
-      unless entry_path.start_with?(File.realpath(extract_path))
+      unless entry_path.start_with?(real_extract_path)
         raise LucideRuby::SyncError, "Zip slip detected: #{entry.name}"
       end
 
