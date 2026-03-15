@@ -24,7 +24,7 @@ This will:
 
 1. Create a config initializer at `config/initializers/lucide_ruby.rb`
 2. Create the icon directory at `app/assets/icons/lucide/`
-3. Download all Lucide SVG icons from the latest release
+3. Download all Lucide SVG icons from the latest release that includes packaged assets
 
 Commit the icons to version control so deploys don't need to re-sync.
 
@@ -76,7 +76,7 @@ end
 Downloads and extracts Lucide icons from GitHub releases.
 
 ```bash
-# Sync latest version
+# Sync latest version with packaged assets
 rake lucide:sync
 
 # Pin to a specific version

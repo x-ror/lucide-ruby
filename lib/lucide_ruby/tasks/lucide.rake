@@ -2,7 +2,6 @@
 
 require "net/http"
 require "uri"
-require "json"
 require "fileutils"
 require "tmpdir"
 require "zip"
@@ -15,15 +14,16 @@ namespace :lucide do
 
     puts "Fetching Lucide icons..."
 
-    # Determine download URL
     if version
-      download_url = "https://github.com/lucide-icons/lucide/releases/download/#{version}/lucide-icons-#{version}.zip"
+      release = LucideRuby::ReleaseResolver.resolve(version: version)
+      download_url = release[:download_url]
+      version = release[:version]
       puts "Pinned version: #{version}"
     else
-      puts "Fetching latest release..."
-      latest_url = fetch_latest_release_url
-      version = latest_url[/\/([^\/]+)\/lucide-icons-/, 1]
-      download_url = latest_url
+      puts "Fetching latest release with assets..."
+      release = LucideRuby::ReleaseResolver.resolve
+      download_url = release[:download_url]
+      version = release[:version]
       puts "Latest version: #{version}"
     end
 
@@ -96,20 +96,6 @@ namespace :lucide do
     puts "  Version: #{version}"
     puts "  Icons:   #{svg_count}"
   end
-end
-
-def fetch_latest_release_url
-  uri = URI("https://api.github.com/repos/lucide-icons/lucide/releases/latest")
-  response = make_request(uri)
-
-  data = JSON.parse(response.body)
-  asset = data["assets"]&.find { |a| a["name"]&.match?(/^lucide-icons-.*\.zip$/) }
-
-  unless asset
-    raise LucideRuby::SyncError, "Could not find lucide-icons zip in latest release"
-  end
-
-  asset["browser_download_url"]
 end
 
 def download_file(url, destination, redirect_limit = 5)

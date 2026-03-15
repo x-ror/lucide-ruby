@@ -8,6 +8,7 @@ require_relative "lucide_ruby/configuration"
 require_relative "lucide_ruby/errors"
 require_relative "lucide_ruby/cache"
 require_relative "lucide_ruby/icon"
+require_relative "lucide_ruby/release_resolver"
 require_relative "lucide_ruby/view_helpers"
 require_relative "lucide_ruby/railtie" if defined?(Rails)
 
